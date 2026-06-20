@@ -134,12 +134,14 @@ public class Menu {
         
         StringBuilder display = new StringBuilder(title + "\n");
         for (int i = 0; i < options.size(); i++) {
-            if (i == confirmedIndex) {
+            if (i == confirmedIndex && i == selectedIndex) {
+                display.append("-* ");
+            } else if (i == confirmedIndex) {
                 display.append(" * ");
             } else if (i == selectedIndex) {
                 display.append("-> ");
             } else {
-                display.append("    ");
+                display.append("   ");
             }
             display.append(options.get(i).getName()).append("\n");
         }

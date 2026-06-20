@@ -8,12 +8,11 @@ repositories {
 }
 
 dependencies {
-    testImplementation 'junit:junit:4.13.2'
     implementation "com.github.kwhat:jnativehook:2.2.2"
 }
 
 application {
-    mainClass = 'org.example.Main'
+    mainClass = 'FakeDriverStationClient'
 }
 
 java {

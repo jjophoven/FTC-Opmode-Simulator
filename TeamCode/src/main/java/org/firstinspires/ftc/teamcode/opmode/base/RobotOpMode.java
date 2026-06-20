@@ -72,7 +72,7 @@ public abstract class RobotOpMode extends OpMode {
                 voltage / 14.5 * 100,
                 voltage
         ));
-        context.telemetry.addLine("Loop Time: " + timer.getSmoothedDt() + " ms");
+        context.telemetry.addLine("Loop Time: " + String.format("%.3f ms", timer.getSmoothedDt()));
         context.telemetry.addLine("Start Pose: " + pose);
 
         Logger.recordOutput("InitLoop/raw loop time (ms)", timer.getDt());

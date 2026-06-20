@@ -1,0 +1,56 @@
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.Gamepad;
+import org.firstinspires.ftc.teamcode.fake.FakeHardwareMap;
+import org.firstinspires.ftc.teamcode.fake.FakeTelemetry;
+import org.firstinspires.ftc.teamcode.fake.FakeDriverStationServer;
+
+import java.io.IOException;
+
+public class OpModeSimulator {
+    public static void simulate(OpMode opMode) throws InterruptedException, IOException {
+
+        FakeDriverStationServer driverStation = new FakeDriverStationServer();
+
+        driverStation.startServer();
+        driverStation.acceptClient();
+
+        opMode.hardwareMap = new FakeHardwareMap(null, null);
+        opMode.telemetry = new FakeTelemetry(driverStation);
+
+        opMode.gamepad1 = new Gamepad();
+
+        System.out.println(driverStation.state);
+
+        while (driverStation.state == FakeDriverStationServer.OpModeState.STOPPED) {
+            driverStation.poll();
+
+            Thread.sleep(20);
+        }
+
+        opMode.init();
+
+        while (driverStation.state == FakeDriverStationServer.OpModeState.INIT) {
+            driverStation.poll();
+
+            // makes Edge Detection methods work
+            opMode.gamepad1.fromByteArray(driverStation.gamepad1.toByteArray());
+
+            opMode.init_loop();
+
+            Thread.sleep(20);
+        }
+
+        opMode.start();
+
+        while (driverStation.state == FakeDriverStationServer.OpModeState.RUNNING) {
+            driverStation.poll();
+
+            // makes Edge Detection methods work
+            opMode.gamepad1.fromByteArray(driverStation.gamepad1.toByteArray());
+
+            opMode.loop();
+
+            Thread.sleep(20);
+        }
+    }
+}

@@ -4,6 +4,11 @@ import org.firstinspires.ftc.robotcore.external.Func;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 public class FakeTelemetry implements Telemetry {
+    private final FakeDriverStationServer driverStation;
+
+    public FakeTelemetry(FakeDriverStationServer driverStation) {
+        this.driverStation = driverStation;
+    }
 
     @Override
     public Item addData(String caption, String format, Object... args) {
@@ -60,10 +65,12 @@ public class FakeTelemetry implements Telemetry {
 
     }
 
+    String toBeDisplayed = "";
+
     @Override
     public boolean update() {
-        System.out.print("\033[H\033[2J");
-        System.out.flush();
+        driverStation.sendTelemetry(toBeDisplayed);
+        toBeDisplayed = "";
         return false;
     }
 
@@ -74,7 +81,7 @@ public class FakeTelemetry implements Telemetry {
 
     @Override
     public Line addLine(String lineCaption) {
-        System.out.println(lineCaption);
+        toBeDisplayed += lineCaption + "\n";
         return null;
     }
 
