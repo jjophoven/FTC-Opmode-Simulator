@@ -21,8 +21,7 @@ public class FakeDriverStationServer {
     public boolean running = false;
     public boolean clientConnected = false;
 
-    public enum OpModeState { STOPPED, INIT, RUNNING }
-    public OpModeState state = OpModeState.STOPPED;
+    public OpModeState state = OpModeState.WAIT_FOR_INIT;
 
     public FakeDriverStationServer() {}
 

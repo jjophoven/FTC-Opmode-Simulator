@@ -25,5 +25,6 @@ android {
 
 dependencies {
     implementation project(':FtcRobotController')
+    implementation project(':Simulation')
     testImplementation 'junit:junit:4.13.2'
 }

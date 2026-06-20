@@ -18,8 +18,7 @@ public class FakeDriverStationClient extends JFrame {
     private static final Color TEXT_MUTED    = new Color(0x88, 0x88, 0x88);
     private static final Color BORDER_COLOR  = new Color(0x3A, 0x3A, 0x3A);
 
-    public enum DSState { STOPPED, INIT, RUNNING }
-    private volatile DSState dsState = DSState.STOPPED;
+    private volatile OpModeState dsState = OpModeState.WAIT_FOR_INIT;
 
     private JTextArea telemetryArea;
     private JLabel statusLabel;
@@ -225,11 +224,11 @@ public class FakeDriverStationClient extends JFrame {
 
     private void onMainButton() {
         switch (dsState) {
-            case STOPPED:
-                transitionTo(DSState.INIT);
+            case WAIT_FOR_INIT:
+                transitionTo(OpModeState.INITIALIZING);
                 break;
-            case INIT:
-                transitionTo(DSState.RUNNING);
+            case INITIALIZING:
+                transitionTo(OpModeState.RUNNING);
                 break;
             case RUNNING:
                 // shouldn't happen; STOP button handles this
@@ -238,14 +237,14 @@ public class FakeDriverStationClient extends JFrame {
     }
 
     private void onStop() {
-        transitionTo(DSState.STOPPED);
+        transitionTo(OpModeState.STOPPED);
     }
 
-    private void transitionTo(DSState next) {
+    private void transitionTo(OpModeState next) {
         dsState = next;
         SwingUtilities.invokeLater(() -> {
             switch (next) {
-                case INIT:
+                case INITIALIZING:
                     statusLabel.setText("INIT");
                     statusLabel.setBackground(ACCENT_BLUE);
                     mainButton.setText("START");
@@ -355,6 +354,7 @@ public class FakeDriverStationClient extends JFrame {
         } catch (IOException e) {
             closeConnection();
         }
+
     }
 
     private void closeConnection() {
@@ -381,7 +381,7 @@ public class FakeDriverStationClient extends JFrame {
         }
     }
 
-    public void sendState(DSState state) {
+    public void sendState(OpModeState state) {
         try {
             if (out != null) {
                 out.writeByte(STATE_PACKET);
@@ -394,7 +394,7 @@ public class FakeDriverStationClient extends JFrame {
     }
 
     public static void main(String[] args) {
-        // send opmodes
+        // TODO send opmodes
         int port = args.length > 0 ? Integer.parseInt(args[0]) : 8080;
         SwingUtilities.invokeLater(() -> new FakeDriverStationClient(port));
     }
