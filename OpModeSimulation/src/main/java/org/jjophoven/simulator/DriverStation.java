@@ -1,6 +1,10 @@
-package org.jjophoven.fakehardware;
+package org.jjophoven.simulator;
 
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.Gamepad;
 import org.jjophoven.driverstation.OpModeState;
+import org.jjophoven.fakehardware.FakeHardwareMap;
+import org.jjophoven.fakehardware.FakeTelemetry;
 import org.jjophoven.input.Keybinds;
 
 import java.io.*;
@@ -9,7 +13,7 @@ import java.net.Socket;
 import java.util.HashSet;
 import java.util.Set;
 
-public class FakeDriverStationServer {
+public class DriverStation {
     private static final int PORT = 8080;
     private static final int SOCKET_TIMEOUT_MS = 30000;
 
@@ -19,15 +23,28 @@ public class FakeDriverStationServer {
     private DataOutputStream out;
     private Process process;
 
-    public FakeGamepad gamepad1 = new FakeGamepad();
-    public FakeGamepad gamepad2 = new FakeGamepad();
-
     public boolean running = false;
     public boolean clientConnected = false;
 
     public OpModeState state = OpModeState.WAIT_FOR_INIT;
 
-    public FakeDriverStationServer() {}
+    OpMode opMode;
+    FakeHardwareMap fakeHardwareMap;
+    Keybinds gamepad1Keybinds;
+    Keybinds gamepad2Keybinds;
+
+    public DriverStation(OpMode opMode, Keybinds gamepad1, Keybinds gamepad2) {
+        opMode.telemetry = new FakeTelemetry(this);
+
+        this.opMode = opMode;
+
+        fakeHardwareMap = new FakeHardwareMap();
+        opMode.hardwareMap = fakeHardwareMap;
+        this.gamepad1Keybinds = gamepad1;
+        this.gamepad2Keybinds = gamepad2;
+        opMode.gamepad1 = new Gamepad();
+        opMode.gamepad2 = new Gamepad();
+    }
 
     public void startServer() throws IOException {
         log("Connecting to Fake Driver Station on port " + PORT);
@@ -66,6 +83,11 @@ public class FakeDriverStationServer {
 
     private final Set<Integer> heldKeys = new HashSet<>();
 
+    public void update() {
+        poll();
+        fakeHardwareMap.updateHardware();
+    }
+
     public void poll() {
         boolean isAlive = process.isAlive();
         if (!running || !clientConnected || !isAlive) {
@@ -85,8 +107,8 @@ public class FakeDriverStationServer {
                         if (pressed) heldKeys.add(keyCode);
                         else heldKeys.remove(keyCode);
 
-                        gamepad1.setFromKeys(heldKeys, new Keybinds());
-                        gamepad2.setFromKeys(heldKeys, new Keybinds());
+                        gamepad1Keybinds.apply(opMode.gamepad1, heldKeys);
+                        gamepad2Keybinds.apply(opMode.gamepad2, heldKeys);
 
                         break;
 

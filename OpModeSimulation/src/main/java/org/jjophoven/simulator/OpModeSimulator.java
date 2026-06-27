@@ -1,35 +1,29 @@
 package org.jjophoven.simulator;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.hardware.Gamepad;
 import org.jjophoven.driverstation.OpModeState;
-import org.jjophoven.fakehardware.FakeDriverStationServer;
-import org.jjophoven.fakehardware.FakeHardware;
-import org.jjophoven.fakehardware.FakeHardwareMap;
-import org.jjophoven.fakehardware.FakeTelemetry;
+import org.jjophoven.input.Keybinds;
 
 import java.io.IOException;
 
 public class OpModeSimulator {
     public static void simulate(OpMode opMode) throws InterruptedException, IOException {
-        FakeDriverStationServer driverStation = new FakeDriverStationServer();
+        DriverStation driverStation = new DriverStation(opMode, new Keybinds(), new Keybinds());
 
         driverStation.startServer();
         driverStation.acceptClient();
 
-        FakeHardware hardware = new FakeHardware(opMode, driverStation);
-
         System.out.println(driverStation.state);
 
         while (driverStation.state == OpModeState.WAIT_FOR_INIT) {
-            hardware.driverStation.poll();
+            driverStation.poll();
             Thread.sleep(20);
         }
 
         opMode.init();
 
         while (driverStation.state == OpModeState.INITIALIZING) {
-            hardware.update();
+            driverStation.update();
 
             opMode.init_loop();
 
@@ -39,7 +33,7 @@ public class OpModeSimulator {
         opMode.start();
 
         while (driverStation.state == OpModeState.RUNNING) {
-            hardware.update();
+            driverStation.update();
 
             opMode.loop();
 
