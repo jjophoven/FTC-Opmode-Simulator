@@ -1,0 +1,43 @@
+// OpModeSimulation is intended to be an Android library that provides
+// fake hardware / simulation helpers for TeamCode. It must not be an
+// application module (app) because TeamCode is the app; depending on an
+// application module causes the Android resource/linker errors you saw.
+//
+// Make this a library module and give it a distinct namespace to avoid
+// resource/package collisions with TeamCode.
+
+apply plugin: 'com.android.library'
+apply from: '../build.dependencies.gradle'
+
+android {
+    // Keep SDK levels in sync with other library modules
+    compileSdkVersion 30
+
+    defaultConfig {
+        minSdkVersion 24
+        //noinspection ExpiredTargetSdkVersion
+        targetSdkVersion 28
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    // Use a distinct namespace for the simulation library
+//    namespace = 'org.firstinspires.ftc.opmodesimulation'
+//    namespace = 'org.firstinspires.ftc.opmodesimulation'
+    namespace = 'org.jjophoven'
+
+    packagingOptions {
+        jniLibs.useLegacyPackaging true
+    }
+}
+
+dependencies {
+    // The simulation library only needs the FTC SDK classes (library)
+    compileOnly project(':FtcRobotController')
+    implementation project(':DriverStationClient')
+    implementation project(':MotorModeling')
+    testImplementation 'junit:junit:4.13.2'
+}
