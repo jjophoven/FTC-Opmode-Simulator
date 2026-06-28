@@ -1,18 +1,18 @@
 package org.jjophoven.driverstation;
 
+import org.jjophoven.driverstation.packets.KeyPacket;
+import org.jjophoven.driverstation.packets.OpModePacket;
+import org.jjophoven.driverstation.packets.OpModeState;
+import org.jjophoven.driverstation.packets.OpModesPacket;
+
 import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-public class FakeDriverStationClient extends JFrame {
+public class DriverStationWindow extends JFrame {
     private static final Color BG_DARK       = new Color(0x1A, 0x1A, 0x1A);
     private static final Color BG_PANEL      = new Color(0x2A, 0x2A, 0x2A);
     private static final Color BG_TELEM      = new Color(0x12, 0x12, 0x12);
@@ -33,7 +33,7 @@ public class FakeDriverStationClient extends JFrame {
     private JLabel connectionLabel;
     private JButton mainButton;
     private JButton stopButton;
-    private JComboBox<OpModeInfo> opModeCombo;
+    private JComboBox<OpModePacket> opModeCombo;
     private JPanel bottomBar;
 
     private Timer swingTimer;
@@ -41,14 +41,15 @@ public class FakeDriverStationClient extends JFrame {
 
     private final DriverStationConnection connection;
 
-    public FakeDriverStationClient(int port) {
+    public DriverStationWindow(int port) {
         super("FTC Driver Station");
 
         initUI();
 
         connection = new DriverStationConnection(
                 port,
-                telemetryArea::setText,
+                (telemetryPacket -> telemetryArea.setText(telemetryPacket.telemetry)),
+                this::opModeSelection,
                 () -> {
                     connectionLabel.setText("● CONNECTED");
                     connectionLabel.setForeground(ACCENT_GREEN);
@@ -58,40 +59,40 @@ public class FakeDriverStationClient extends JFrame {
                     connectionLabel.setForeground(ACCENT_RED);
                     dispose();
                     System.exit(0);
-                },
-                // opmode list callback: populate combo box when server sends available opmodes
-                (opmodeList) -> {
-                    if (opmodeList == null) return;
-                    SwingUtilities.invokeLater(() -> {
-                        DefaultComboBoxModel<OpModeInfo> model = new DefaultComboBoxModel<>();
-                        for (OpModeInfo info : opmodeList.opmodes) {
-                            model.addElement(info);
-                        }
-                        if (opModeCombo == null) {
-                            opModeCombo = new JComboBox<>(model);
-                            opModeCombo.setMaximumSize(new Dimension(240, 28));
-                            opModeCombo.setBackground(BG_PANEL);
-                            opModeCombo.setForeground(TEXT_PRIMARY);
-                            opModeCombo.addActionListener(e -> {
-                                OpModeInfo sel = (OpModeInfo) opModeCombo.getSelectedItem();
-                                if (sel != null) opModeLabel.setText(sel.toString());
-                            });
-                            if (bottomBar != null) {
-                                bottomBar.removeAll();
-                                bottomBar.add(opModeCombo);
-                                bottomBar.revalidate();
-                                bottomBar.repaint();
-                            }
-                        } else {
-                            opModeCombo.setModel(model);
-                        }
-                        if (opModeCombo.getItemCount() > 0) {
-                            opModeCombo.setSelectedIndex(0);
-                            opModeLabel.setText(((OpModeInfo) opModeCombo.getSelectedItem()).toString());
-                        }
-                    });
                 }
         );
+    }
+
+    private void opModeSelection(OpModesPacket opmodeList) {
+        if (opmodeList == null) return;
+        SwingUtilities.invokeLater(() -> {
+            DefaultComboBoxModel<OpModePacket> model = new DefaultComboBoxModel<>();
+            for (OpModePacket info : opmodeList.opmodes) {
+                model.addElement(info);
+            }
+            if (opModeCombo == null) {
+                opModeCombo = new JComboBox<>(model);
+                opModeCombo.setMaximumSize(new Dimension(240, 28));
+                opModeCombo.setBackground(BG_PANEL);
+                opModeCombo.setForeground(TEXT_PRIMARY);
+                opModeCombo.addActionListener(e -> {
+                    OpModePacket sel = (OpModePacket) opModeCombo.getSelectedItem();
+                    if (sel != null) opModeLabel.setText(sel.toString());
+                });
+                if (bottomBar != null) {
+                    bottomBar.removeAll();
+                    bottomBar.add(opModeCombo);
+                    bottomBar.revalidate();
+                    bottomBar.repaint();
+                }
+            } else {
+                opModeCombo.setModel(model);
+            }
+            if (opModeCombo.getItemCount() > 0) {
+                opModeCombo.setSelectedIndex(0);
+                opModeLabel.setText(opModeCombo.getSelectedItem().toString());
+            }
+        });
     }
 
     private void initUI() {
@@ -314,7 +315,7 @@ public class FakeDriverStationClient extends JFrame {
                     stopButton.setEnabled(true);
                     // if an opmode was selected, display and send it to the server
                     if (opModeCombo != null && opModeCombo.getItemCount() > 0) {
-                        OpModeInfo sel = (OpModeInfo) opModeCombo.getSelectedItem();
+                        OpModePacket sel = (OpModePacket) opModeCombo.getSelectedItem();
                         if (sel != null) {
                             opModeLabel.setText(sel.toString());
                             connection.send(sel);
@@ -405,6 +406,6 @@ public class FakeDriverStationClient extends JFrame {
     public static void main(String[] args) {
         int port = args.length > 0 ? Integer.parseInt(args[0]) : 8080;
 
-        SwingUtilities.invokeLater(() -> new FakeDriverStationClient(port));
+        SwingUtilities.invokeLater(() -> new DriverStationWindow(port));
     }
 }

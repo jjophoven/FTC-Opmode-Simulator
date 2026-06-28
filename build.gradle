@@ -28,9 +28,9 @@ repositories {
     mavenCentral()
 }
 
-tasks.register("runSimulator", JavaExec) {
+tasks.register("runDriverStationWindow", JavaExec) {
     classpath = project(":DriverStationClient").sourceSets.main.runtimeClasspath
-    mainClass = "org.jjophoven.driverstation.FakeDriverStationClient"
+    mainClass = "org.jjophoven.driverstation.DriverStationWindow"
 }
 
 

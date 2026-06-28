@@ -4,8 +4,8 @@ import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import org.jjophoven.driverstation.OpModeInfo;
-import org.jjophoven.driverstation.OpModeList;
+import org.jjophoven.driverstation.packets.OpModePacket;
+import org.jjophoven.driverstation.packets.OpModesPacket;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -16,97 +16,54 @@ import java.util.jar.JarFile;
 
 
 public class OpModeRegister {
-    Set<OpMode> autos = new LinkedHashSet<>();
-    Set<OpMode> teleops = new LinkedHashSet<>();
+    Set<OpMode> opmodes = new LinkedHashSet<>();
 
     public OpModeRegister() {
         findAnnotatedOpModes();
     }
 
-    public String getOpModeName(OpMode opMode) {
+    public OpModePacket toPacket(OpMode opMode) {
         if (opMode.getClass().isAnnotationPresent(TeleOp.class)) {
             TeleOp annotation = opMode.getClass().getAnnotation(TeleOp.class);
             assert annotation != null;
             String name = annotation.name();
             if (name.isEmpty()) name = opMode.getClass().getSimpleName();
-            return name;
+            return new OpModePacket(OpModePacket.Type.TELEOP, name, annotation.group());
         }
         if (opMode.getClass().isAnnotationPresent(Autonomous.class)) {
             Autonomous annotation = opMode.getClass().getAnnotation(Autonomous.class);
             assert annotation != null;
             String name = annotation.name();
             if (name.isEmpty()) name = opMode.getClass().getSimpleName();
-            return name;
+            return new OpModePacket(OpModePacket.Type.AUTO, name, annotation.group());
         }
-        return null;
+        throw new RuntimeException("opmode is not Teleop or Autonomous annotated");
     }
 
-    public String getOpModeGroup(OpMode opMode) {
-        if (opMode.getClass().isAnnotationPresent(TeleOp.class)) {
-            TeleOp annotation = opMode.getClass().getAnnotation(TeleOp.class);
-            assert annotation != null;
-            return annotation.group();
-        }
-        if (opMode.getClass().isAnnotationPresent(Autonomous.class)) {
-            Autonomous annotation = opMode.getClass().getAnnotation(Autonomous.class);
-            assert annotation != null;
-            return annotation.group();
-        }
-        return "";
+    public Set<OpMode> getOpModes() {
+        return opmodes;
     }
 
-    public OpMode getOpMode(String name, String group) {
-        for (OpMode opMode : getAutonomousModes()) {
-            if (getOpModeName(opMode).equals(name) && getOpModeGroup(opMode).equals(group)) return opMode;
+    public OpMode getOpMode(OpModePacket packet) {
+        for (OpMode opMode : getOpModes()) {
+            if (toPacket(opMode).equals(packet)) {
+                return opMode;
+            }
         }
-        for (OpMode opMode : getTeleOpModes()) {
-            if (getOpModeName(opMode).equals(name) && getOpModeGroup(opMode).equals(group)) return opMode;
-        }
-        return null;
+        throw new RuntimeException("could not find opmode");
     }
 
-    public void writeOpmodes(DataOutputStream out) throws IOException {
-        List<OpModeInfo> opModes = new ArrayList<>();
+    public void writeOpmodes(DataOutputStream output) throws IOException {
+        List<OpModePacket> opModes = new ArrayList<>();
 
-        for (OpMode opMode : getTeleOpModes()) {
-            System.out.println(opMode.getClass().getSimpleName());
-
-            TeleOp annotation = opMode.getClass().getAnnotation(TeleOp.class);
-
-            assert annotation != null;
-            String name = annotation.name();
-            if (name.isEmpty()) name = opMode.getClass().getSimpleName();
-
-            OpModeInfo info = new OpModeInfo(OpModeInfo.Type.TELEOP, name, annotation.group());
-
-            opModes.add(info);
+        for (OpMode opMode : getOpModes()) {
+            opModes.add(toPacket(opMode));
         }
 
-        for (OpMode opMode : getAutonomousModes()) {
-            System.out.println(opMode.getClass().getSimpleName());
-
-            Autonomous annotation = opMode.getClass().getAnnotation(Autonomous.class);
-
-            assert annotation != null;
-            String name = annotation.name();
-            if (name.isEmpty()) name = opMode.getClass().getSimpleName();
-
-            OpModeInfo info = new OpModeInfo(OpModeInfo.Type.AUTO, name, annotation.group());
-
-            opModes.add(info);
-        }
-
-        OpModeList opModeList = new OpModeList(opModes);
-        System.out.println(opModeList);
-        opModeList.write(out);
-    }
-
-    public Set<OpMode> getAutonomousModes() {
-        return autos;
-    }
-
-    public Set<OpMode> getTeleOpModes() {
-        return teleops;
+        OpModesPacket opModesPacket = new OpModesPacket(opModes);
+        output.writeByte(opModesPacket.getPacketType());
+        opModesPacket.write(output);
+        output.flush();
     }
 
     private void findAnnotatedOpModes() {
@@ -168,10 +125,8 @@ public class OpModeRegister {
             Class<?> c = Class.forName(className, false, cl);
             if (!OpMode.class.isAssignableFrom(c)) return;
             if (c.isAnnotationPresent(Disabled.class)) return;
-            if (c.isAnnotationPresent(TeleOp.class)) {
-                teleops.add((OpMode) c.newInstance());
-            } else if (c.isAnnotationPresent(Autonomous.class)) {
-                autos.add((OpMode) c.newInstance());
+            if (c.isAnnotationPresent(TeleOp.class) || c.isAnnotationPresent(Autonomous.class)) {
+                opmodes.add((OpMode) c.newInstance());
             }
         } catch (ClassNotFoundException ignored) {
 

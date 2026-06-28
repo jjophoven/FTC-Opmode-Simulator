@@ -12,7 +12,7 @@ dependencies {
 }
 
 application {
-    mainClass = 'org.jjophoven.driverstation.FakeDriverStationClient'
+    mainClass = 'org.jjophoven.driverstation.DriverStationWindow'
 }
 
 java {

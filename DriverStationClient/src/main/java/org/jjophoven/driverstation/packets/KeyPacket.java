@@ -1,4 +1,4 @@
-package org.jjophoven.driverstation;
+package org.jjophoven.driverstation.packets;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -15,7 +15,7 @@ public class KeyPacket implements Packet {
 
     @Override
     public byte getPacketType() {
-        return PacketType.KEY;
+        return Packet.KEY;
     }
 
     @Override

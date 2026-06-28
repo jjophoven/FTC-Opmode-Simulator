@@ -1,4 +1,4 @@
-package org.jjophoven.driverstation;
+package org.jjophoven.driverstation.packets;
 
 import java.io.*;
 
@@ -9,12 +9,12 @@ public enum OpModeState implements Packet {
 
     @Override
     public byte getPacketType() {
-        return PacketType.STATE;
+        return Packet.STATE;
     }
 
     @Override
-    public void write(DataOutputStream out) throws IOException {
-        out.writeByte(ordinal());
+    public void write(DataOutputStream output) throws IOException {
+        output.writeByte(ordinal());
     }
 
     public static OpModeState read(DataInputStream in) throws IOException {

@@ -23,8 +23,14 @@ simulate boundaries, goal, collisions, gamepieces, and shooting artifacts, and i
 
 each mecanum wheel
 
-close window when done
-cleaner gamepad controls
-verify axis directions
 
-find all teleop modes
+
+1. TODO convert everything to inches
+2. TODO add keybinds
+3. TODO verify axis directions
+4. TODO simulate boundaries collisions
+5. FIXME robot centric drifting
+6. TODO simulate gamepieces, rolling, intaking, colliding, and shooting
+7. TODO Clean up logs and change filepath
+
+TODO clean up client/server code

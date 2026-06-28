@@ -1,13 +1,13 @@
-package org.jjophoven.driverstation;
+package org.jjophoven.driverstation.packets;
 
 import java.io.*;
 
-public class OpModeInfo implements Packet {
+public class OpModePacket implements Packet {
     public Type type;
     public String group;
     public String name;
 
-    public OpModeInfo(Type type, String name, String group) {
+    public OpModePacket(Type type, String name, String group) {
         this.type = type;
         this.group = group;
         this.name = name;
@@ -20,7 +20,7 @@ public class OpModeInfo implements Packet {
 
     @Override
     public byte getPacketType() {
-        return PacketType.OPMODE;
+        return Packet.OPMODE;
     }
 
     public enum Type {
@@ -34,9 +34,9 @@ public class OpModeInfo implements Packet {
         output.writeUTF(group);
     }
 
-    public static OpModeInfo read(DataInput input) {
+    public static OpModePacket read(DataInput input) {
         try {
-            return new OpModeInfo(
+            return new OpModePacket(
                     Type.values()[input.readByte()],
                     input.readUTF(),
                     input.readUTF()
@@ -44,5 +44,14 @@ public class OpModeInfo implements Packet {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof OpModePacket) {
+            OpModePacket other = (OpModePacket) obj;
+            return other.type.equals(type) && other.name.equals(name) && other.group.equals(group);
+        }
+        return false;
     }
 }

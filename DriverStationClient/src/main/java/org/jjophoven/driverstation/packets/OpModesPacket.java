@@ -1,40 +1,38 @@
-package org.jjophoven.driverstation;
+package org.jjophoven.driverstation.packets;
 
 import java.io.DataInputStream;
-import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class OpModeList implements Packet {
-    List<OpModeInfo> opmodes;
+public class OpModesPacket implements Packet {
+    public List<OpModePacket> opmodes;
 
-    public OpModeList(List<OpModeInfo> opmodes) {
+    public OpModesPacket(List<OpModePacket> opmodes) {
         this.opmodes = opmodes;
     }
 
     @Override
     public byte getPacketType() {
-        return PacketType.OPMODE;
+        return Packet.OPMODE;
     }
 
     @Override
     public void write(DataOutputStream output) throws IOException {
-        output.writeInt(getPacketType());
         try {
             output.writeInt(opmodes.size());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
-        for (OpModeInfo opmode : opmodes) {
+        for (OpModePacket opmode : opmodes) {
             opmode.write(output);
         }
     }
 
-    public static OpModeList read(DataInputStream input) {
-        List<OpModeInfo> opmodes = new ArrayList<>();
+    public static OpModesPacket read(DataInputStream input) {
+        List<OpModePacket> opmodes = new ArrayList<>();
 
         int autoCount = 0;
         try {
@@ -43,9 +41,9 @@ public class OpModeList implements Packet {
             throw new RuntimeException(e);
         }
         for (int i = 0; i < autoCount; i++) {
-            opmodes.add(OpModeInfo.read(input));
+            opmodes.add(OpModePacket.read(input));
         }
 
-        return new OpModeList(opmodes);
+        return new OpModesPacket(opmodes);
     }
 }

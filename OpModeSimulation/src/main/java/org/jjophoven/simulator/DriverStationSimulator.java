@@ -2,10 +2,7 @@ package org.jjophoven.simulator;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.Gamepad;
-import org.jjophoven.driverstation.KeyPacket;
-import org.jjophoven.driverstation.OpModeInfo;
-import org.jjophoven.driverstation.OpModeState;
-import org.jjophoven.driverstation.PacketType;
+import org.jjophoven.driverstation.packets.*;
 import org.jjophoven.fakehardware.FakeHardwareMap;
 import org.jjophoven.fakehardware.FakeTelemetry;
 import org.jjophoven.input.Keybinds;
@@ -24,7 +21,7 @@ public class DriverStationSimulator {
     private Socket clientSocket;
     private DataInputStream in;
     private DataOutputStream out;
-    private Process process;
+    private Process driverStationWindow;
 
     public boolean clientConnected = false;
 
@@ -34,6 +31,7 @@ public class DriverStationSimulator {
     FakeHardwareMap fakeHardwareMap;
     Keybinds gamepad1Keybinds;
     Keybinds gamepad2Keybinds;
+    OpModeRegister opModeRegister = new OpModeRegister();
 
     public DriverStationSimulator(Keybinds gamepad1, Keybinds gamepad2) throws IOException, InterruptedException {
         this.gamepad1Keybinds = gamepad1;
@@ -42,7 +40,7 @@ public class DriverStationSimulator {
         startServer();
         acceptClient();
 
-        while (process.isAlive()) {
+        while (driverStationWindow.isAlive()) {
             System.out.println("Waiting for next opmode...");
 
             while (state == OpModeState.WAIT_FOR_INIT) {
@@ -80,7 +78,7 @@ public class DriverStationSimulator {
         listener = new ServerSocket(PORT);
         listener.setSoTimeout(SOCKET_TIMEOUT_MS);
 
-        process = startDriverStationProcess();
+        driverStationWindow = startDriverStationProcess();
 
         clientConnected = false;
     }
@@ -93,8 +91,7 @@ public class DriverStationSimulator {
                 in = new DataInputStream(clientSocket.getInputStream());
                 out = new DataOutputStream(clientSocket.getOutputStream());
 
-                OpModeRegister register = new OpModeRegister();
-                register.writeOpmodes(out);
+                opModeRegister.writeOpmodes(out);
 
                 clientConnected = true;
 
@@ -115,7 +112,7 @@ public class DriverStationSimulator {
     }
 
     public void poll() {
-        if (!process.isAlive()) {
+        if (!driverStationWindow.isAlive()) {
             close();
             return;
         }
@@ -123,7 +120,7 @@ public class DriverStationSimulator {
         try {
             while (in.available() > 0) {
                 switch (in.readByte()) {
-                    case PacketType.KEY:
+                    case Packet.KEY:
                         KeyPacket keyPacket = KeyPacket.read(in);
 
                         System.out.println("KEY: " + keyPacket.keyCode + ", " + (keyPacket.down ? "pressed" : "released"));
@@ -135,14 +132,13 @@ public class DriverStationSimulator {
                         gamepad2Keybinds.apply(opMode.gamepad2, heldKeys);
 
                         break;
-                    case PacketType.STATE:
+                    case Packet.STATE:
                         this.state = OpModeState.read(in);
                         break;
-                    case PacketType.OPMODE:
+                    case Packet.OPMODE:
                         System.out.println("RECEIVED OPMODES");
-                        OpModeRegister register = new OpModeRegister();
-                        OpModeInfo opModeInfo = OpModeInfo.read(in);
-                        opMode = register.getOpMode(opModeInfo.name, opModeInfo.group);
+                        OpModePacket packet = OpModePacket.read(in);
+                        opMode = opModeRegister.getOpMode(packet);
 
                         opMode.telemetry = new FakeTelemetry(this);
 
@@ -166,7 +162,7 @@ public class DriverStationSimulator {
         }
 
         try {
-            out.writeByte(PacketType.TELEMETRY);
+            out.writeByte(Packet.TELEMETRY);
             out.writeUTF(data);
             out.flush();
         } catch (IOException ignored) {
@@ -187,12 +183,12 @@ public class DriverStationSimulator {
         } catch (Exception ignored) {
         }
 
-        if (process != null) {
-            process.destroy();
+        if (driverStationWindow != null) {
+            driverStationWindow.destroy();
         }
 
-//        state = OpModeState.STOPPED;
-        state = OpModeState.WAIT_FOR_INIT;
+        state = null;
+        opMode.stop();
 
         log("Driver Station shutdown.");
     }
@@ -203,7 +199,7 @@ public class DriverStationSimulator {
 
         Process process = new ProcessBuilder(
                 gradlew.getAbsolutePath(),
-                "runSimulator"
+                "runDriverStationWindow"
         )
                 .directory(projectRoot)
                 .redirectErrorStream(true)
